@@ -65,6 +65,9 @@ public:
 
 private:
 
+  /** Split every cluster into two clusters if that helps the description of the data. */
+  void SplitClusters();
+  
   /** The label (cluster ID) of each point. */
   std::vector<unsigned int> Labels;
 

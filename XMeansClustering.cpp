@@ -41,7 +41,7 @@ void XMeansClustering::Cluster()
   {
     std::stringstream ss;
     ss << "The number of points (" << this->Points.size()
-       << " must be larger than the number of clusters (" << this->MaxK << ")";
+       << " must be larger than the maximum number of clusters (" << this->MaxK << ")";
     throw std::runtime_error(ss.str());
   }
 
@@ -51,21 +51,56 @@ void XMeansClustering::Cluster()
   // Initialize the labels array
   this->Labels.resize(this->Points.size());
 
-  // The current iteration number
-  int iter = 0;
-
-  // Track whether any labels changed in the last iteration
-  bool changed = true;
   do
-    {
-
+  {
+    
     // Save the old labels
     oldLabels = this->Labels;
-    iter++;
-    }while(changed);
-    //}while(iter < 100); // You could use this stopping criteria to make kmeans run for a specified number of iterations
 
-  std::cout << "KMeans finished in " << iter << " iterations." << std::endl;
+  }while(this->ClusterCenters.size() < this->MaxK);
+
+}
+
+void XMeansClustering::SplitClusters()
+{
+  assert(this->Points.size() > 0);
+
+  VectorOfPoints newClusterCenters;
+
+  for(unsigned int clusterId = 0; clusterId < this->ClusterCenters.size(); ++clusterId)
+  {
+    // Generate a random direction
+    PointType randomUnitVector = EigenHelpers::RandomUnitVector<PointType>(this->Points[0].size());
+
+    // Get the bounding box of the points that belong to this cluster
+    PointType minCorner;
+    PointType maxCorner;
+    EigenHelpers::GetBoundingBox(this->Points, minCorner, maxCorner);
+
+    // Scale the unit vector by the size of the region
+    PointType splitVector = randomUnitVector * (maxCorner - minCorner) / 2.0f;
+    PointType childCenter1 = this->ClusterCenters[clusterId] + splitVector;
+    PointType childCenter2 = this->ClusterCenters[clusterId] + splitVector;
+
+    // Compute the BIC of the original model
+    float BIC_parent;
+
+    // Compute the BIC of the new (split) model
+    float BIC_children;
+
+    // If the split was useful, keep it
+    if(BIC_children < BIC_parent)
+    {
+      newClusterCenters.push_back(childCenter1);
+      newClusterCenters.push_back(childCenter2);
+    }
+    else
+    {
+      newClusterCenters.push_back(this->ClusterCenters[clusterId]);
+    }
+  }
+
+  this->ClusterCenters = newClusterCenters;
 }
 
 std::vector<unsigned int> XMeansClustering::GetIndicesWithLabel(unsigned int label)
@@ -85,7 +120,7 @@ std::vector<unsigned int> XMeansClustering::GetIndicesWithLabel(unsigned int lab
 XMeansClustering::VectorOfPoints XMeansClustering::GetPointsWithLabel(const unsigned int label)
 {
   VectorOfPoints points;
-  
+
   std::vector<unsigned int> indicesWithLabel = GetIndicesWithLabel(label);
 
   for(unsigned int i = 0; i < indicesWithLabel.size(); i++)
@@ -120,7 +155,7 @@ std::vector<unsigned int> XMeansClustering::GetLabels()
 void XMeansClustering::OutputClusterCenters()
 {
   std::cout << std::endl << "Cluster centers: " << std::endl;
-  
+
   for(unsigned int i = 0; i < ClusterCenters.size(); ++i)
     {
     std::cout << ClusterCenters[i] << " ";
