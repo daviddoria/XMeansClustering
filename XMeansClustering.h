@@ -16,11 +16,10 @@
  *
  *=========================================================================*/
 
-/*
-XMeans clustering is a method that creates K clusters of points from
-an unorganized set of input points. It is an extension of KMeans clustering
-that attempts to determine K during the algorithm.
-*/
+/** XMeans clustering is a method that creates K clusters of points from
+  * an unorganized set of input points. It is an extension of KMeans clustering
+  * that attempts to determine K during the algorithm.
+  */
 
 #ifndef XMeansClustering_h
 #define XMeansClustering_h
@@ -40,12 +39,16 @@ public:
   /** Constructor. */
   XMeansClustering();
 
-  /** The maximum number of clusters to find */
+  /** Set the maximum number of clusters to find. */
   void SetMaxK(const unsigned int maxk);
+
+  /** Get the maximum number of clusters to find. */
   unsigned int GetMaxK();
 
+  /** Get the ids of the points that belong to class 'label'. */
   std::vector<unsigned int> GetIndicesWithLabel(const unsigned int label);
 
+  /** Get the coordinates of the points that belong to class 'label'. */
   VectorOfPoints GetPointsWithLabel(const unsigned int label);
 
   /** Set the points to cluster. */
@@ -57,28 +60,8 @@ public:
   /** Actually perform the clustering. */
   void Cluster();
 
+  /** Write the cluster centers to the standard output. */
   void OutputClusterCenters();
-
-protected:
-
-  /** Initialize cluster centers using the KMeans++ algorithm */
-  void KMeansPPInit();
-
-  unsigned int ClosestCluster(const PointType& queryPoint);
-
-  unsigned int ClosestPointIndex(const PointType& queryPoint);
-  double ClosestPointDistance(const PointType& queryPoint);
-  double ClosestPointDistanceExcludingId(const PointType& queryPoint, const unsigned int excludedId);
-  double ClosestPointDistanceExcludingIds(const PointType& queryPoint, const std::vector<unsigned int> excludedIds);
-
-  /** Based on the current cluster membership, compute the cluster centers. */
-  void EstimateClusterCenters();
-
-  void AssignLabels();
-  bool CheckChanged(const std::vector<unsigned int> labels, const std::vector<unsigned int> oldLabels);
-
-  PointType GetRandomPointInBounds();
-  unsigned int SelectWeightedIndex(std::vector<double> weights); // Intentionally not passed by reference
 
 private:
 

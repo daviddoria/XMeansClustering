@@ -1,0 +1,11 @@
+This is an implementation of "X-means: Extending K-means with Efficient Estimation of the Number of Clusters"
+
+BIC(M_j) = \hat{l}_j(D) - \frac{p_j}{2} log(R) % p_j (the number of free parameters of model j) is the sum of K-1 class probabilities (because the Kth is exactly determined as 1 - the rest ? then why isn't this sum always just 1?), MK centroid coordinates, and one variance estimate.
+
+\hat{\sigma}^2 = \frac{1}{R-K}\sum_i (x_i - \mu_{(i)})^2 % why is this R-K instead of just R?
+
+\hat{P}(x_i) = \frac{R_(i)}{R} \frac{1}{\sqrt{2\pi}\hat{\sigma}^M} \exp(-\frac{1}{2\hat{\sigma}^2 \|x_i - \mu_{(i)}\|^2)
+
+l(D) = \sum_i (\log \frac{1}{\sqrt{2\pi}\sigma^M} - \frac{1}{2\sigma^2} \|x_i - \mu_{(i)}\|^2 + log\frac{R_{(i)}{R})
+
+\hat{l}(D_n) = -\frac{R_n}{2}log(2\pi) - \frac{R_n M}{2} log(\hat{\sigma}^2) - \frac{R_n - K}{2} + R_n log(R_n) - R_n log(R)
