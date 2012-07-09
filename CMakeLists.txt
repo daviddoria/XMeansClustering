@@ -8,17 +8,12 @@ include_directories(/media/portable/src/Eigen)
 
 # Submodules
 
-# Only include EigenHelpers if it is not already available
-if(NOT TARGET EigenHelpers)
-  add_subdirectory(EigenHelpers)
-endif()
-
-if(NOT TARGET Helpers)
- add_subdirectory(Helpers)
+if(NOT TARGET KMeansClustering)
+  add_subdirectory(KMeansClustering)
 endif()
 
 add_library(XMeansClustering XMeansClustering.cpp)
-TARGET_LINK_LIBRARIES(KMeansClustering EigenHelpers)
+TARGET_LINK_LIBRARIES(XMeansClustering KMeansClustering)
 
 ADD_EXECUTABLE(XMeansClusteringExample Example.cpp)
-TARGET_LINK_LIBRARIES(XMeansClusteringExample XMeansClustering EigenHelpers)
+TARGET_LINK_LIBRARIES(XMeansClusteringExample XMeansClustering)

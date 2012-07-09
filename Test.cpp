@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright David Doria 2011 daviddoria@gmail.com
+ *  Copyright David Doria 2012 daviddoria@gmail.com
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,23 +16,21 @@
  *
  *=========================================================================*/
 
-#include "KMeansClustering.h"
+#include "XMeansClustering.h"
 
 #include <iostream>
 
-KMeansClustering::VectorOfPoints GenerateData();
+XMeansClustering::VectorOfPoints GenerateData();
 
 int main(int, char *[])
 {
-  KMeansClustering::VectorOfPoints points = GenerateData();
-  KMeansClustering kmeans;
-  kmeans.SetK(2);
-  kmeans.SetPoints(points);
-  kmeans.SetInitMethod(KMeansClustering::KMEANSPP);
-  kmeans.SetRandom(false); // for repeatable results
-  kmeans.Cluster();
+  XMeansClustering::VectorOfPoints points = GenerateData();
+  XMeansClustering xmeans;
+  xmeans.SetK(2);
+  xmeans.SetPoints(points);
+  xmeans.Cluster();
 
-  std::vector<unsigned int> labels = kmeans.GetLabels();
+  std::vector<unsigned int> labels = xmeans.GetLabels();
 
   if(labels[0] != 0 || labels[1] != 0 || labels[2] != 0 ||
      labels[3] != 1 || labels[4] != 1 || labels[5] != 1)
@@ -43,11 +41,11 @@ int main(int, char *[])
   return EXIT_SUCCESS;
 }
 
-KMeansClustering::VectorOfPoints GenerateData()
+XMeansClustering::VectorOfPoints GenerateData()
 {
   KMeansClustering::VectorOfPoints points;
 
-  Eigen::VectorXf p = Eigen::VectorXf::Zero(2);
+  KMeansClustering::PointType p = KMeansClustering::PointType::Zero(2);
   p[0] = 10; p[1] = 10;
   points.push_back(p);
   p[0] = 10.1; p[1] = 10.1;

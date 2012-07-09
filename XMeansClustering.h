@@ -38,20 +38,15 @@ public:
   typedef std::vector<PointType, Eigen::aligned_allocator<PointType> > VectorOfPoints;
 
   /** Constructor. */
-  KMeansClustering();
+  XMeansClustering();
 
   /** The maximum number of clusters to find */
   void SetMaxK(const unsigned int maxk);
   unsigned int GetMaxK();
 
   std::vector<unsigned int> GetIndicesWithLabel(const unsigned int label);
-  VectorOfPoints GetPointsWithLabel(const unsigned int label);
 
-  /**
-   * If this function is called, the randomness
-   * is removed for repeatability for testing
-   */
-  void SetRandom(const bool r);
+  VectorOfPoints GetPointsWithLabel(const unsigned int label);
 
   /** Set the points to cluster. */
   void SetPoints(const VectorOfPoints& points);
@@ -78,7 +73,7 @@ protected:
 
   /** Based on the current cluster membership, compute the cluster centers. */
   void EstimateClusterCenters();
-  
+
   void AssignLabels();
   bool CheckChanged(const std::vector<unsigned int> labels, const std::vector<unsigned int> oldLabels);
 
@@ -90,15 +85,9 @@ private:
   /** The label (cluster ID) of each point. */
   std::vector<unsigned int> Labels;
 
-  /** Should the computation be random? If false, then it is repeatable (for testing). */
-  bool Random;
+  /** The maximum number of clusters to find */
+  unsigned int MaxK;
 
-  /** The initialization method to use */
-  int InitMethod;
-
-  /** The number of clusters to find */
-  unsigned int K;
-  
   /** The points to cluster. */
   VectorOfPoints Points;
 
