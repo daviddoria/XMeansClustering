@@ -1,5 +1,10 @@
 This is an implementation of "X-means: Extending K-means with Efficient Estimation of the Number of Clusters"
 
+Requirements:
+GCC 4.7 compiled with -std=c++11 (Required by Helpers submodule for use of 'declval')
+
+----------------------
+
 BIC(M_j) = \hat{l}_j(D) - \frac{p_j}{2} log(R) % p_j (the number of free parameters of model j) is the sum of K-1 class probabilities (because the Kth is exactly determined as 1 - the rest ? then why isn't this sum always just 1?), MK centroid coordinates, and one variance estimate.
 
 \hat{\sigma}^2 = \frac{1}{R-K}\sum_i (x_i - \mu_{(i)})^2 % why is this R-K instead of just R?

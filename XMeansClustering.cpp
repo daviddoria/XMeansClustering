@@ -28,7 +28,7 @@
 // Submodules
 #include "KMeansClustering/EigenHelpers/EigenHelpers.h"
 #include "KMeansClustering/Helpers/Helpers.h"
-#include "../../Examples/c++/Templates/ClassTemplateSpecialization/Point.h"
+//#include "../../Examples/c++/Templates/ClassTemplateSpecialization/Point.h"
 
 XMeansClustering::XMeansClustering() : MaxK(3)
 {
@@ -82,7 +82,7 @@ void XMeansClustering::SplitClusters()
     PointType childCenter1 = this->ClusterCenters[clusterId] + splitVector;
     PointType childCenter2 = this->ClusterCenters[clusterId] + splitVector;
 
-    // Compute the BIC of the original model
+    // Compute the Bayesian Information Criterion (BIC) of the original model
     float BIC_parent;
 
     // Compute the BIC of the new (split) model
