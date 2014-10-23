@@ -39,11 +39,23 @@ public:
   /** Constructor. */
   XMeansClustering();
 
+  /** Set the minimum number of clusters to find. */
+  void SetMinK(const unsigned int mink);
+
+  /** Get the minimum number of clusters to find. */
+  unsigned int GetMinK();
+
   /** Set the maximum number of clusters to find. */
   void SetMaxK(const unsigned int maxk);
 
   /** Get the maximum number of clusters to find. */
   unsigned int GetMaxK();
+
+  void ImproveParams();
+
+  void ImproveStructure();
+
+  float ComputeBIC();
 
   /** Get the ids of the points that belong to class 'label'. */
   std::vector<unsigned int> GetIndicesWithLabel(const unsigned int label);
@@ -70,6 +82,9 @@ private:
   
   /** The label (cluster ID) of each point. */
   std::vector<unsigned int> Labels;
+
+  /** The minimum number of clusters to find */
+  unsigned int MinK;
 
   /** The maximum number of clusters to find */
   unsigned int MaxK;
