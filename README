@@ -1,3 +1,5 @@
+NOTE: This implementation is not complete. ComputeBIC() (at least) needs to be implemented.
+
 This is an implementation of "X-means: Extending K-means with Efficient Estimation of the Number of Clusters"
 (http://www.cs.cmu.edu/~dpelleg/download/xmeans.pdf)
 
