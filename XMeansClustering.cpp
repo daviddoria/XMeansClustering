@@ -26,9 +26,7 @@
 #include <stdexcept>
 
 // Submodules
-#include "KMeansClustering/EigenHelpers/EigenHelpers.h"
-#include "KMeansClustering/Helpers/Helpers.h"
-//#include "../../Examples/c++/Templates/ClassTemplateSpecialization/Point.h"
+#include "EigenHelpers/EigenHelpers.h"
 
 XMeansClustering::XMeansClustering() : MinK(1), MaxK(3)
 {
