@@ -30,7 +30,7 @@ UseSubmodule(KMeansClustering XMeansClustering)
 add_subdirectory(EigenHelpers)
 
 add_library(XMeansClustering XMeansClustering.cpp)
-TARGET_LINK_LIBRARIES(XMeansClustering KMeansClustering)
+TARGET_LINK_LIBRARIES(XMeansClustering KMeansClustering EigenHelpers)
 
 ADD_EXECUTABLE(XMeansClusteringExample Example.cpp)
-TARGET_LINK_LIBRARIES(XMeansClusteringExample XMeansClustering)
+TARGET_LINK_LIBRARIES(XMeansClusteringExample XMeansClustering EigenHelpers)

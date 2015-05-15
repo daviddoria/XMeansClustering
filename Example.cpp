@@ -20,11 +20,11 @@
 
 #include <iostream>
 
-XMeansClustering::VectorOfPoints GenerateData();
+Eigen::MatrixXd GenerateData();
 
 int main(int, char *[])
 {
-  XMeansClustering::VectorOfPoints points = GenerateData();
+  Eigen::MatrixXd points = GenerateData();
   XMeansClustering xmeans;
   xmeans.SetMaxK(2);
   xmeans.SetPoints(points);
@@ -41,24 +41,24 @@ int main(int, char *[])
   return EXIT_SUCCESS;
 }
 
-XMeansClustering::VectorOfPoints GenerateData()
+Eigen::MatrixXd GenerateData()
 {
-  XMeansClustering::VectorOfPoints points;
+  Eigen::MatrixXd points(2, 6);
 
-  XMeansClustering::PointType p = XMeansClustering::PointType::Zero(2);
+  Eigen::Vector2d p;
   p[0] = 10; p[1] = 10;
-  points.push_back(p);
+  points.col(0) = p;
   p[0] = 10.1; p[1] = 10.1;
-  points.push_back(p);
+  points.col(1) = p;
   p[0] = 10.2; p[1] = 10.2;
-  points.push_back(p);
+  points.col(2) = p;
 
   p[0] = 5; p[1] = 5;
-  points.push_back(p);
+  points.col(3) = p;
   p[0] = 5.1; p[1] = 5.1;
-  points.push_back(p);
+  points.col(4) = p;
   p[0] = 5.2; p[1] = 5.2;
-  points.push_back(p);
+  points.col(5) = p;
 
   return points;
 }

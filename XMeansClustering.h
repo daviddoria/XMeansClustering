@@ -33,9 +33,6 @@
 class XMeansClustering
 {
 public:
-  typedef Eigen::VectorXf PointType;
-  typedef std::vector<PointType, Eigen::aligned_allocator<PointType> > VectorOfPoints;
-
   /** Constructor. */
   XMeansClustering();
 
@@ -43,13 +40,13 @@ public:
   void SetMinK(const unsigned int mink);
 
   /** Get the minimum number of clusters to find. */
-  unsigned int GetMinK();
+  unsigned int GetMinK() const;
 
   /** Set the maximum number of clusters to find. */
   void SetMaxK(const unsigned int maxk);
 
   /** Get the maximum number of clusters to find. */
-  unsigned int GetMaxK();
+  unsigned int GetMaxK() const;
 
   void ImproveParams();
 
@@ -61,19 +58,25 @@ public:
   std::vector<unsigned int> GetIndicesWithLabel(const unsigned int label);
 
   /** Get the coordinates of the points that belong to class 'label'. */
-  VectorOfPoints GetPointsWithLabel(const unsigned int label);
+  Eigen::MatrixXd GetPointsWithLabel(const unsigned int label);
 
   /** Set the points to cluster. */
-  void SetPoints(const VectorOfPoints& points);
+  void SetPoints(const Eigen::MatrixXd& points);
 
   /** Get the resulting cluster id for each point. */
-  std::vector<unsigned int> GetLabels();
+  std::vector<unsigned int> GetLabels() const;
 
   /** Actually perform the clustering. */
   void Cluster();
 
   /** Write the cluster centers to the standard output. */
   void OutputClusterCenters();
+
+  /** Get the number of points in the data set. */
+  unsigned int GetNumberOfPoints() const;
+
+  /** Get the dimensionality of the data set. */
+  unsigned int GetDimensionality() const;
 
 private:
 
@@ -89,11 +92,12 @@ private:
   /** The maximum number of clusters to find */
   unsigned int MaxK;
 
-  /** The points to cluster. */
-  VectorOfPoints Points;
+  /** The points to cluster. Data in this class is stored as an Eigen matrix, where the data points are column vectors.
+      That is, if we have P N-D points, the matrix is N rows by P columns.*/
+  Eigen::MatrixXd Points;
 
   /** The current cluster centers. */
-  VectorOfPoints ClusterCenters;
+  Eigen::MatrixXd ClusterCenters;
 };
 
 #endif

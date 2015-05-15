@@ -92,22 +92,22 @@ void XMeansClustering::SplitClusters()
 {
   assert(this->Points.size() > 0);
 
-  VectorOfPoints newClusterCenters;
+  Eigen::MatrixXd newClusterCenters;
 
   for(unsigned int clusterId = 0; clusterId < this->ClusterCenters.size(); ++clusterId)
   {
     // Generate a random direction
-    PointType randomUnitVector = EigenHelpers::RandomUnitVector<PointType>(this->Points[0].size());
+    Eigen::VectorXd randomUnitVector = EigenHelpers::RandomUnitVector<Eigen::VectorXd>(this->GetNumberOfPoints());
 
     // Get the bounding box of the points that belong to this cluster
-    PointType minCorner;
-    PointType maxCorner;
+    Eigen::VectorXd minCorner;
+    Eigen::VectorXd maxCorner;
     EigenHelpers::GetBoundingBox(this->Points, minCorner, maxCorner);
 
     // Scale the unit vector by the size of the region
-    PointType splitVector = randomUnitVector * (maxCorner - minCorner) / 2.0f;
-    PointType childCenter1 = this->ClusterCenters[clusterId] + splitVector;
-    PointType childCenter2 = this->ClusterCenters[clusterId] + splitVector;
+    Eigen::VectorXd splitVector = randomUnitVector * (maxCorner - minCorner) / 2.0f;
+    Eigen::VectorXd childCenter1 = this->ClusterCenters.col(clusterId) + splitVector;
+    Eigen::VectorXd childCenter2 = this->ClusterCenters.col(clusterId) + splitVector;
 
     // Compute the Bayesian Information Criterion (BIC) of the original model
     float BIC_parent = ComputeBIC();
@@ -118,12 +118,14 @@ void XMeansClustering::SplitClusters()
     // If the split was useful, keep it
     if(BIC_children < BIC_parent)
     {
-      newClusterCenters.push_back(childCenter1);
-      newClusterCenters.push_back(childCenter2);
+      newClusterCenters.conservativeResize(this->Points.rows(), this->Points.cols() + 2);
+      newClusterCenters.col(this->Points.cols() - 1) = childCenter1;
+      newClusterCenters.col(this->Points.cols()) = childCenter2;
     }
     else
     {
-      newClusterCenters.push_back(this->ClusterCenters[clusterId]);
+      newClusterCenters.conservativeResize(this->Points.rows(), this->Points.cols() + 1);
+      newClusterCenters.col(this->Points.cols()) = this->ClusterCenters.col(clusterId);
     }
   }
 
@@ -144,16 +146,17 @@ std::vector<unsigned int> XMeansClustering::GetIndicesWithLabel(unsigned int lab
   return pointsWithLabel;
 }
 
-XMeansClustering::VectorOfPoints XMeansClustering::GetPointsWithLabel(const unsigned int label)
+Eigen::MatrixXd XMeansClustering::GetPointsWithLabel(const unsigned int label)
 {
-  VectorOfPoints points;
-
   std::vector<unsigned int> indicesWithLabel = GetIndicesWithLabel(label);
 
+  Eigen::MatrixXd points;
+  points.resize(this->GetDimensionality(), indicesWithLabel.size());
+
   for(unsigned int i = 0; i < indicesWithLabel.size(); i++)
-    {
-    points.push_back(this->Points[indicesWithLabel[i]]);
-    }
+  {
+    points.col(i) = this->Points.col(indicesWithLabel[i]);
+  }
 
   return points;
 }
@@ -163,7 +166,7 @@ void XMeansClustering::SetMinK(const unsigned int mink)
   this->MinK = mink;
 }
 
-unsigned int XMeansClustering::GetMinK()
+unsigned int XMeansClustering::GetMinK() const
 {
   return this->MinK;
 }
@@ -173,17 +176,17 @@ void XMeansClustering::SetMaxK(const unsigned int maxk)
   this->MaxK = maxk;
 }
 
-unsigned int XMeansClustering::GetMaxK()
+unsigned int XMeansClustering::GetMaxK() const
 {
   return this->MaxK;
 }
 
-void XMeansClustering::SetPoints(const VectorOfPoints& points)
+void XMeansClustering::SetPoints(const Eigen::MatrixXd& points)
 {
   this->Points = points;
 }
 
-std::vector<unsigned int> XMeansClustering::GetLabels()
+std::vector<unsigned int> XMeansClustering::GetLabels() const
 {
   return this->Labels;
 }
@@ -192,9 +195,19 @@ void XMeansClustering::OutputClusterCenters()
 {
   std::cout << std::endl << "Cluster centers: " << std::endl;
 
-  for(unsigned int i = 0; i < ClusterCenters.size(); ++i)
-    {
-    std::cout << ClusterCenters[i] << " ";
-    }
+  for(unsigned int i = 0; i < this->ClusterCenters.cols(); ++i)
+  {
+    std::cout << this->ClusterCenters.col(i) << " ";
+  }
   std::cout << std::endl;
+}
+
+unsigned int XMeansClustering::GetNumberOfPoints() const
+{
+    return this->Points.cols();
+}
+
+unsigned int XMeansClustering::GetDimensionality() const
+{
+    return this->Points.rows();
 }
