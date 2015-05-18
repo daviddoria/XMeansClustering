@@ -19,6 +19,7 @@
 #include "XMeansClustering.h"
 
 // STL
+#include <algorithm>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -27,29 +28,58 @@
 
 // Submodules
 #include "EigenHelpers/EigenHelpers.h"
-
-XMeansClustering::XMeansClustering() : MinK(1), MaxK(3)
-{
-
-}
+#include "KMeansClustering/KMeansClustering.h"
 
 // This step (so-named in the original paper) is simply a conventional K-means run
 void XMeansClustering::ImproveParams()
 {
-
+    KMeansClustering kmeans;
+    kmeans.SetK(this->ClusterCenters.cols());
+    kmeans.SetClusterCenters(this->ClusterCenters);
+    kmeans.SetPoints(this->Points);
+    kmeans.SetInitMethod(KMeansClustering::MANUAL);
+    kmeans.Cluster();
 }
 
-// This step (so-named in the original paper) determines where the new centroids should appear
+// This step (so-named in the original paper) determines if and where the new (child) centroids should appear
 void XMeansClustering::ImproveStructure()
 {
+    assert(this->Points.size() > 0);
 
+    Eigen::MatrixXd newClusterCenters;
+
+    for(unsigned int clusterId = 0; clusterId < this->ClusterCenters.cols(); ++clusterId)
+    {
+       Eigen::MatrixXd oldClusterCenters = newClusterCenters;
+       Eigen::MatrixXd centers = TryToSplitCluster(clusterId);
+       newClusterCenters.conservativeResize(this->Points.rows(), newClusterCenters.cols() + centers.cols());
+       newClusterCenters << oldClusterCenters, centers;
+    }
+
+    this->ClusterCenters = newClusterCenters;
 }
 
-float XMeansClustering::ComputeBIC()
+float XMeansClustering::ComputeBIC(KMeansClustering* const kmeansModel)
 {
-    //BIC(M_j) = \hat{l}_j(D) - \frac{p_j}{2} log(R) % p_j (the number of free parameters of model j)
-    // is the sum of K-1 class probabilities (because the Kth is exactly determined as 1 - the rest ?
-    // then why isn't this sum always just 1?), MK centroid coordinates, and one variance estimate.
+    // See another implementation: https://github.com/mynameisfiber/pyxmeans/blob/master/pyxmeans/xmeans.py
+    // BIC(M_j) = \hat{l}_j(D) - \frac{p_j}{2} log(R)
+
+    float M = this->GetDimensionality();
+    float K = kmeansModel->GetK();
+    float R = this->GetNumberOfPoints();
+
+    // p_j = (K-1) + (M*K) + 1 (we really just need p, because "model j" is implied by the model that we've passed)
+    float p = (K - 1) + (M*K) + 1;
+
+    // \hat{l}_j(D) is the log-likelihood of the data according to the j^{th} model at the maximum likelihood point
+
+
+    // (K-1) class probabilities because the Kth is exactly determined as 1 - the rest
+    // M*K centroid coordinates
+    // 1 variance estimate.
+
+    // R is the number of points
+    // R_i is the number of points that belong to class i
 
     // \hat{\sigma}^2 = \frac{1}{R-K}\sum_i (x_i - \mu_{(i)})^2 % why is this R-K instead of just R?
 
@@ -62,19 +92,20 @@ float XMeansClustering::ComputeBIC()
 
 void XMeansClustering::Cluster()
 {
-  if(this->Points.size() < this->MaxK)
-  {
-    std::stringstream ss;
-    ss << "The number of points (" << this->Points.size()
-       << " must be larger than the maximum number of clusters (" << this->MaxK << ")";
-    throw std::runtime_error(ss.str());
-  }
-
-  // We must store the labels at the previous iteration to determine whether any labels changed at each iteration.
-  std::vector<unsigned int> oldLabels(this->Points.size(), 0); // initialize to all zeros
+//  if(this->Points.size() < this->MaxK)
+//  {
+//    std::stringstream ss;
+//    ss << "The number of points (" << this->Points.size()
+//       << " must be larger than the maximum number of clusters (" << this->MaxK << ")";
+//    throw std::runtime_error(ss.str());
+//  }
 
   // Initialize the labels array
-  this->Labels.resize(this->Points.size());
+  this->Labels.resize(this->Points.cols());
+  std::fill(this->Labels.begin(),this->Labels.end(), 0);
+
+  // We must store the labels at the previous iteration to determine whether any labels changed at each iteration.
+  std::vector<unsigned int> oldLabels(this->Points.cols());
 
   do
   {
@@ -84,18 +115,14 @@ void XMeansClustering::Cluster()
     ImproveParams();
     ImproveStructure();
 
-  }while(this->ClusterCenters.size() < this->MaxK);
+  }while(this->ClusterCenters.cols() < this->MaxK);
 
 }
 
-void XMeansClustering::SplitClusters()
+Eigen::MatrixXd XMeansClustering::TryToSplitCluster(const unsigned int clusterId)
 {
-  assert(this->Points.size() > 0);
+    Eigen::MatrixXd newClusterCenters;
 
-  Eigen::MatrixXd newClusterCenters;
-
-  for(unsigned int clusterId = 0; clusterId < this->ClusterCenters.size(); ++clusterId)
-  {
     // Generate a random direction
     Eigen::VectorXd randomUnitVector = EigenHelpers::RandomUnitVector<Eigen::VectorXd>(this->GetNumberOfPoints());
 
@@ -118,18 +145,17 @@ void XMeansClustering::SplitClusters()
     // If the split was useful, keep it
     if(BIC_children < BIC_parent)
     {
-      newClusterCenters.conservativeResize(this->Points.rows(), this->Points.cols() + 2);
+      newClusterCenters.resize(this->Points.rows(), this->Points.cols() + 2);
       newClusterCenters.col(this->Points.cols() - 1) = childCenter1;
       newClusterCenters.col(this->Points.cols()) = childCenter2;
     }
     else
     {
-      newClusterCenters.conservativeResize(this->Points.rows(), this->Points.cols() + 1);
+      newClusterCenters.resize(this->Points.rows(), this->Points.cols() + 1);
       newClusterCenters.col(this->Points.cols()) = this->ClusterCenters.col(clusterId);
     }
-  }
 
-  this->ClusterCenters = newClusterCenters;
+    return newClusterCenters;
 }
 
 std::vector<unsigned int> XMeansClustering::GetIndicesWithLabel(unsigned int label)

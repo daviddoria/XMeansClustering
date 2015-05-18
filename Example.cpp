@@ -43,6 +43,8 @@ int main(int, char *[])
 
 Eigen::MatrixXd GenerateData()
 {
+  // This data is 2D.
+  // Here there are two obvious clusters (near (10,10), and (5,5))
   Eigen::MatrixXd points(2, 6);
 
   Eigen::Vector2d p;

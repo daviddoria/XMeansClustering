@@ -30,12 +30,12 @@
 // Eigen
 #include <Eigen/Dense>
 
+// Submodules
+class KMeansClustering;
+
 class XMeansClustering
 {
 public:
-  /** Constructor. */
-  XMeansClustering();
-
   /** Set the minimum number of clusters to find. */
   void SetMinK(const unsigned int mink);
 
@@ -47,12 +47,6 @@ public:
 
   /** Get the maximum number of clusters to find. */
   unsigned int GetMaxK() const;
-
-  void ImproveParams();
-
-  void ImproveStructure();
-
-  float ComputeBIC();
 
   /** Get the ids of the points that belong to class 'label'. */
   std::vector<unsigned int> GetIndicesWithLabel(const unsigned int label);
@@ -66,7 +60,7 @@ public:
   /** Get the resulting cluster id for each point. */
   std::vector<unsigned int> GetLabels() const;
 
-  /** Actually perform the clustering. */
+  /** Actually perform the clustering (the main driver of the algorithm). */
   void Cluster();
 
   /** Write the cluster centers to the standard output. */
@@ -80,17 +74,29 @@ public:
 
 private:
 
+  /** Run a normal KMeans clustering. */
+  void ImproveParams();
+
   /** Split every cluster into two clusters if that helps the description of the data. */
-  void SplitClusters();
+  void ImproveStructure();
+
+  /** Compute how well the kmeansModel represents the data. */
+  float ComputeBIC(KMeansClustering* const kmeansModel);
+
+  /** Try to split cluster 'clusterId' into two clusters if that helps the description of the data.
+      Return a matrix of the best cluster centers (1 column indicates that the cluster did not split and is the
+      cluster center of the parent, while two columns indicates the the cluster was split and the columns are
+      the cluster centers of the children. */
+  Eigen::MatrixXd TryToSplitCluster(const unsigned int clusterId);
   
   /** The label (cluster ID) of each point. */
   std::vector<unsigned int> Labels;
 
   /** The minimum number of clusters to find */
-  unsigned int MinK;
+  unsigned int MinK = 1;
 
   /** The maximum number of clusters to find */
-  unsigned int MaxK;
+  unsigned int MaxK = 5;
 
   /** The points to cluster. Data in this class is stored as an Eigen matrix, where the data points are column vectors.
       That is, if we have P N-D points, the matrix is N rows by P columns.*/
