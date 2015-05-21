@@ -30,35 +30,58 @@
 #include "EigenHelpers/EigenHelpers.h"
 #include "KMeansClustering/KMeansClustering.h"
 
+void XMeansClustering::Initialize()
+{
+    this->KMeans.SetK(this->MinK);
+    this->KMeans.SetPoints(this->Points);
+    this->KMeans.SetInitMethod(KMeansClustering::RANDOM);
+    this->KMeans.Cluster();
+
+    this->ClusterCenters = this->KMeans.GetClusterCenters();
+    this->Labels = this->KMeans.GetLabels();
+}
+
 // This step (so-named in the original paper) is simply a conventional K-means run
 void XMeansClustering::ImproveParams()
 {
-    KMeansClustering kmeans;
-    kmeans.SetK(this->ClusterCenters.cols());
-    kmeans.SetClusterCenters(this->ClusterCenters);
-    kmeans.SetPoints(this->Points);
-    kmeans.SetInitMethod(KMeansClustering::MANUAL);
-    kmeans.Cluster();
+    this->KMeans.SetK(this->ClusterCenters.cols());
+    this->KMeans.SetClusterCenters(this->ClusterCenters);
+    this->KMeans.SetPoints(this->Points);
+    this->KMeans.SetInitMethod(KMeansClustering::MANUAL);
+    this->KMeans.Cluster();
+
+    this->ClusterCenters = this->KMeans.GetClusterCenters();
+    this->Labels = this->KMeans.GetLabels();
 }
 
 // This step (so-named in the original paper) determines if and where the new (child) centroids should appear
 void XMeansClustering::ImproveStructure()
 {
-    assert(this->Points.size() > 0);
-
+    // We are going to build this from scratch
     Eigen::MatrixXd newClusterCenters;
 
     for(unsigned int clusterId = 0; clusterId < this->ClusterCenters.cols(); ++clusterId)
     {
        Eigen::MatrixXd oldClusterCenters = newClusterCenters;
-       Eigen::MatrixXd centers = TryToSplitCluster(clusterId);
-       newClusterCenters.conservativeResize(this->Points.rows(), newClusterCenters.cols() + centers.cols());
-       newClusterCenters << oldClusterCenters, centers;
+       Eigen::MatrixXd splitCenters = TryToSplitCluster(clusterId);
+       newClusterCenters.conservativeResize(this->Points.rows(), oldClusterCenters.cols() + splitCenters.cols());
+
+       if(oldClusterCenters.cols() > 0)
+       {
+         newClusterCenters << oldClusterCenters, splitCenters;
+       }
+       else
+       {
+         newClusterCenters << splitCenters;
+       }
     }
 
+    std::cout << "There are " << newClusterCenters.cols() << " clusters after ImproveStructure()." << std::endl;
     this->ClusterCenters = newClusterCenters;
 }
 
+/*
+The description of BIC in the XMeans paper seems overly convoluted.
 float XMeansClustering::ComputeBIC(KMeansClustering* const kmeansModel)
 {
     // See another implementation: https://github.com/mynameisfiber/pyxmeans/blob/master/pyxmeans/xmeans.py
@@ -89,9 +112,11 @@ float XMeansClustering::ComputeBIC(KMeansClustering* const kmeansModel)
 
     // \hat{l}(D_n) = -\frac{R_n}{2}log(2\pi) - \frac{R_n M}{2} log(\hat{\sigma}^2) - \frac{R_n - K}{2} + R_n log(R_n) - R_n log(R)
 }
+*/
 
 void XMeansClustering::Cluster()
 {
+   assert(this->Points.size() > 0);
 //  if(this->Points.size() < this->MaxK)
 //  {
 //    std::stringstream ss;
@@ -107,72 +132,88 @@ void XMeansClustering::Cluster()
   // We must store the labels at the previous iteration to determine whether any labels changed at each iteration.
   std::vector<unsigned int> oldLabels(this->Points.cols());
 
+  Initialize();
+
+  unsigned int iterationCounter = 0;
   do
   {
-    // Save the old labels
-    oldLabels = this->Labels;
+    std::cout << "XMeans iteration " << iterationCounter << std::endl;
 
     ImproveParams();
     ImproveStructure();
 
+    iterationCounter++;
   }while(this->ClusterCenters.cols() < this->MaxK);
+
+  // Do the last parameter estimation with the latest structure
+  ImproveParams();
 
 }
 
 Eigen::MatrixXd XMeansClustering::TryToSplitCluster(const unsigned int clusterId)
 {
-    Eigen::MatrixXd newClusterCenters;
+    Eigen::MatrixXd pointsInCluster = this->KMeans.GetPointsWithLabel(clusterId);
 
     // Generate a random direction
-    Eigen::VectorXd randomUnitVector = EigenHelpers::RandomUnitVector<Eigen::VectorXd>(this->GetNumberOfPoints());
+    Eigen::VectorXd randomUnitVector = EigenHelpers::RandomUnitVector<Eigen::VectorXd>(this->GetDimensionality());
 
-    // Get the bounding box of the points that belong to this cluster
+    // Scale the random vector by the size of the region
     Eigen::VectorXd minCorner;
     Eigen::VectorXd maxCorner;
     EigenHelpers::GetBoundingBox(this->Points, minCorner, maxCorner);
 
-    // Scale the unit vector by the size of the region
-    Eigen::VectorXd splitVector = randomUnitVector * (maxCorner - minCorner) / 2.0f;
+    Eigen::VectorXd splitVector = randomUnitVector * (maxCorner - minCorner).norm() / 2.0f;
     Eigen::VectorXd childCenter1 = this->ClusterCenters.col(clusterId) + splitVector;
-    Eigen::VectorXd childCenter2 = this->ClusterCenters.col(clusterId) + splitVector;
+    Eigen::VectorXd childCenter2 = this->ClusterCenters.col(clusterId) - splitVector;
+    Eigen::MatrixXd childCenters(this->GetDimensionality(), 2);
+    childCenters << childCenter1, childCenter2;
+
+    // Perform a K=2 clustering
+    KMeansClustering childKMeans;
+    childKMeans.SetK(2);
+    childKMeans.SetPoints(pointsInCluster);
+    childKMeans.SetClusterCenters(childCenters);
+    childKMeans.SetInitMethod(KMeansClustering::MANUAL);
+    childKMeans.Cluster();
+
+    childCenters = childKMeans.GetClusterCenters();
 
     // Compute the Bayesian Information Criterion (BIC) of the original model
-    float BIC_parent = ComputeBIC();
+    float BIC_parent = this->KMeans.ComputeBIC(clusterId);
 
     // Compute the BIC of the new (split) model
-    float BIC_children = ComputeBIC();
+    float BIC_children = childKMeans.ComputeBIC();
 
     // If the split was useful, keep it
     if(BIC_children < BIC_parent)
     {
-      newClusterCenters.resize(this->Points.rows(), this->Points.cols() + 2);
-      newClusterCenters.col(this->Points.cols() - 1) = childCenter1;
-      newClusterCenters.col(this->Points.cols()) = childCenter2;
+      return childCenters;
     }
     else
     {
-      newClusterCenters.resize(this->Points.rows(), this->Points.cols() + 1);
-      newClusterCenters.col(this->Points.cols()) = this->ClusterCenters.col(clusterId);
+      // The split should not be kept, so return the old cluster center
+      Eigen::MatrixXd newClusterCenters = Eigen::MatrixXd(this->GetDimensionality(), 1);
+      newClusterCenters << this->ClusterCenters.col(clusterId);
+      return newClusterCenters;
     }
 
-    return newClusterCenters;
 }
 
-std::vector<unsigned int> XMeansClustering::GetIndicesWithLabel(unsigned int label)
+std::vector<unsigned int> XMeansClustering::GetIndicesWithLabel(unsigned int label)const
 {
   std::vector<unsigned int> pointsWithLabel;
   for(unsigned int i = 0; i < this->Labels.size(); i++)
-    {
+  {
     if(this->Labels[i] == label)
-      {
+    {
       pointsWithLabel.push_back(i);
-      }
     }
+  }
 
   return pointsWithLabel;
 }
 
-Eigen::MatrixXd XMeansClustering::GetPointsWithLabel(const unsigned int label)
+Eigen::MatrixXd XMeansClustering::GetPointsWithLabel(const unsigned int label) const
 {
   std::vector<unsigned int> indicesWithLabel = GetIndicesWithLabel(label);
 
@@ -236,4 +277,9 @@ unsigned int XMeansClustering::GetNumberOfPoints() const
 unsigned int XMeansClustering::GetDimensionality() const
 {
     return this->Points.rows();
+}
+
+Eigen::MatrixXd XMeansClustering::GetClusterCenters() const
+{
+    return this->ClusterCenters;
 }

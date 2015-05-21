@@ -26,11 +26,14 @@ int main(int, char *[])
 {
   Eigen::MatrixXd points = GenerateData();
   XMeansClustering xmeans;
-  xmeans.SetMaxK(2);
+  xmeans.SetMinK(1);
+  xmeans.SetMaxK(3);
   xmeans.SetPoints(points);
   xmeans.Cluster();
 
   std::vector<unsigned int> labels = xmeans.GetLabels();
+
+  std::cout << "Best number of clusters:" << xmeans.GetClusterCenters().cols() << std::endl;
 
   std::cout << "Resulting cluster ids:" << std::endl;
   for(unsigned int i = 0; i < labels.size(); ++i)

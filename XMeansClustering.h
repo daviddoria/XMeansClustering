@@ -31,11 +31,14 @@
 #include <Eigen/Dense>
 
 // Submodules
-class KMeansClustering;
+#include "KMeansClustering/KMeansClustering.h"
 
 class XMeansClustering
 {
 public:
+  /** Initialize by clustering with MinK clusters. */
+  void Initialize();
+
   /** Set the minimum number of clusters to find. */
   void SetMinK(const unsigned int mink);
 
@@ -49,10 +52,13 @@ public:
   unsigned int GetMaxK() const;
 
   /** Get the ids of the points that belong to class 'label'. */
-  std::vector<unsigned int> GetIndicesWithLabel(const unsigned int label);
+  std::vector<unsigned int> GetIndicesWithLabel(const unsigned int label) const;
 
   /** Get the coordinates of the points that belong to class 'label'. */
-  Eigen::MatrixXd GetPointsWithLabel(const unsigned int label);
+  Eigen::MatrixXd GetPointsWithLabel(const unsigned int label) const;
+
+  /** Get the resulting cluster centers. */
+  Eigen::MatrixXd GetClusterCenters() const;
 
   /** Set the points to cluster. */
   void SetPoints(const Eigen::MatrixXd& points);
@@ -80,9 +86,6 @@ private:
   /** Split every cluster into two clusters if that helps the description of the data. */
   void ImproveStructure();
 
-  /** Compute how well the kmeansModel represents the data. */
-  float ComputeBIC(KMeansClustering* const kmeansModel);
-
   /** Try to split cluster 'clusterId' into two clusters if that helps the description of the data.
       Return a matrix of the best cluster centers (1 column indicates that the cluster did not split and is the
       cluster center of the parent, while two columns indicates the the cluster was split and the columns are
@@ -104,6 +107,9 @@ private:
 
   /** The current cluster centers. */
   Eigen::MatrixXd ClusterCenters;
+
+  /** This object will get updated during the ImproveParams() step. */
+  KMeansClustering KMeans;
 };
 
 #endif
